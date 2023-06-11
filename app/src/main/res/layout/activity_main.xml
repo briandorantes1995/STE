@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:background="#2196F3"
+    tools:context=".MainActivity">
+
+    <TextView
+        android:layout_width="312dp"
+        android:layout_height="58dp"
+        android:text="Iniciar Sesion"
+        android:textAlignment="center"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.079"
+        tools:textColor="#FFEB3B"
+        tools:textSize="48sp" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="257dp"
+        android:layout_height="199dp"
+        app:srcCompat="@drawable/ste"
+        tools:layout_editor_absoluteX="77dp"
+        tools:layout_editor_absoluteY="150dp" />
+
+    <EditText
+        android:id="@+id/usuario"
+        android:layout_width="236dp"
+        android:layout_height="54dp"
+        android:ems="10"
+        android:hint="Usuario"
+        android:inputType="textEmailAddress"
+        android:textAlignment="center"
+        tools:layout_editor_absoluteX="98dp"
+        tools:layout_editor_absoluteY="380dp" />
+
+    <EditText
+        android:id="@+id/password"
+        android:layout_width="230dp"
+        android:layout_height="59dp"
+        android:ems="10"
+        android:hint="Contraseña"
+        android:inputType="textPassword"
+        android:textAlignment="center"
+        tools:layout_editor_absoluteX="100dp"
+        tools:layout_editor_absoluteY="469dp" />
+
+    <Button
+        android:id="@+id/button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#FFEB3B"
+        android:text="Iniciar Sesion"
+        android:textColor="#3F51B5"
+        android:textStyle="bold"
+        tools:layout_editor_absoluteX="154dp"
+        tools:layout_editor_absoluteY="575dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
