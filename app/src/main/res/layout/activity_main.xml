@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:background="#2196F3"
+    tools:background="@drawable/fondo"
     tools:context=".MainActivity">
 
     <TextView
@@ -23,31 +23,39 @@
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="257dp"
-        android:layout_height="199dp"
+        android:layout_width="256dp"
+        android:layout_height="196dp"
         app:srcCompat="@drawable/ste"
-        tools:layout_editor_absoluteX="77dp"
-        tools:layout_editor_absoluteY="150dp" />
+        tools:layout_editor_absoluteX="93dp"
+        tools:layout_editor_absoluteY="153dp" />
 
     <EditText
         android:id="@+id/usuario"
         android:layout_width="236dp"
         android:layout_height="54dp"
+        android:background="@android:color/holo_blue_dark"
         android:ems="10"
         android:hint="Usuario"
         android:inputType="textEmailAddress"
         android:textAlignment="center"
-        tools:layout_editor_absoluteX="98dp"
-        tools:layout_editor_absoluteY="380dp" />
+        android:textColor="#FFEB3B"
+        android:textColorHint="#FFEB3B"
+        tools:layout_editor_absoluteX="100dp"
+        tools:layout_editor_absoluteY="381dp"
+        tools:textStyle="bold" />
 
     <EditText
         android:id="@+id/password"
         android:layout_width="230dp"
         android:layout_height="59dp"
+        android:background="@android:color/holo_blue_dark"
         android:ems="10"
         android:hint="Contraseña"
         android:inputType="textPassword"
         android:textAlignment="center"
+        android:textColor="#FFEB3B"
+        android:textColorHint="#FFEB3B"
+        android:textStyle="bold"
         tools:layout_editor_absoluteX="100dp"
         tools:layout_editor_absoluteY="469dp" />
 
