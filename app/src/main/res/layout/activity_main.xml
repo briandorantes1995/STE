@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:background="@drawable/fondo"
+    android:background="@drawable/fondo"
     tools:context=".MainActivity">
 
     <TextView
@@ -13,14 +13,14 @@
         android:layout_height="58dp"
         android:text="@string/main_title"
         android:textAlignment="center"
+        android:textColor="#FFEB3B"
+        android:textSize="48sp"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.079"
-        tools:textColor="#FFEB3B"
-        tools:textSize="48sp" />
+        app:layout_constraintVertical_bias="0.079" />
 
     <ImageView
         android:id="@+id/imageView"
@@ -86,6 +86,7 @@
         android:layout_marginTop="36dp"
         android:layout_marginEnd="146dp"
         android:background="@drawable/roundtext"
+        android:backgroundTint="#FFEB3B"
         android:gravity="center"
         android:text="@string/main_button"
         android:textColor="@android:color/holo_blue_dark"
@@ -94,7 +95,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.487"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/password"
-        tools:backgroundTint="#FFEB3B" />
+        app:layout_constraintTop_toBottomOf="@+id/password" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
