@@ -24,7 +24,12 @@ public class MainActivity extends AppCompatActivity {
 
      String data;
 
-     Boolean Validate;
+     String Token;
+
+
+    String Name;
+
+    Integer Rol;
 
     OkHttpClient client = new OkHttpClient();
      EditText username;
@@ -61,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
                 .add("password", Password)
                 .build();
         Request request = new Request.Builder()
-                .url("https://api-ste.smartte.com.mx/controller/sign_in.php")
+                .url("https://api-ste.smartte.com.mx/apiv2/login")
                 .post(formBody)
                 .build();
 
@@ -69,10 +74,15 @@ public class MainActivity extends AppCompatActivity {
             if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
             data = response.body().string();
             JSONObject json = new JSONObject(data);
-            Validate = json.getBoolean("isValidUser");
-            System.out.println(Validate);
-            if (Validate) {
+            Token = json.getString("token");
+            JSONObject Usuario = json.getJSONObject("user");
+            Name = Usuario.getString("name");
+            Rol = Usuario.getInt("id");
+            if (Token != null) {
                 Intent secondActivityIntent = new Intent(this, Home.class);
+                secondActivityIntent.putExtra("Name",Name);
+                secondActivityIntent.putExtra("Rol",Rol);
+                secondActivityIntent.putExtra("Token",Token);
                 startActivity(secondActivityIntent);
             }
         }
