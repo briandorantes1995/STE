@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import android.content.Intent;
@@ -21,7 +22,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
     private DrawerLayout drawerLayout;
     String Name;
-    Integer Rol;
+    Integer Rolusuario;
     String Token;
 
     TextView Usuario;
@@ -33,7 +34,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         //Datos pasados por activity de login
         Bundle datos = this.getIntent().getExtras();
         Name = datos.getString("Name");
-        Rol = datos.getInt("Rol");
+        Rolusuario = datos.getInt("Rol");
         Token = datos.getString("Token");
 
         super.onCreate(savedInstanceState);
@@ -48,7 +49,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         Usuario = header.findViewById(R.id.nombreusuario);
         Roles = header.findViewById(R.id.Rol);
         Usuario.setText(Name);
-        switch (Rol){
+        switch (Rolusuario){
             case 1:
                 Roles.setText("Admin");
             case 2:
@@ -71,7 +72,13 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         if(item.getItemId() == R.id.nav_home) {
-                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new HomeFragment()).commit();
+            Fragment Home = new HomeFragment();
+            Bundle bundle = new Bundle();
+            bundle.putString("Name",Name);
+            bundle.putInt("Rol",Rolusuario);
+            bundle.putString("Token",Token);
+            Home.setArguments(bundle);
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, Home).commit();
         }
         if(item.getItemId() == R.id.nav_location) {
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new LocationFragment()).commit();
