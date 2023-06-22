@@ -8,9 +8,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.Navigation;
-
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -84,7 +81,13 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new LocationFragment()).commit();
         }
         if(item.getItemId() == R.id.nav_payment) {
-                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new PaymentFragment()).commit();
+            Fragment Pay = new PaymentFragment();
+            Bundle bundle = new Bundle();
+            bundle.putString("Name",Name);
+            bundle.putInt("Rol",Rolusuario);
+            bundle.putString("Token",Token);
+            Pay.setArguments(bundle);
+                getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, Pay).commit();
         }
         if(item.getItemId() == R.id.nav_news) {
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new NewsFragment()).commit();

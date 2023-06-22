@@ -27,7 +27,7 @@
         android:layout_marginStart="224dp"
         android:layout_marginTop="80dp"
         android:src="@drawable/nav_payment"
-        android:tint="@color/STE_bluelight"
+        app:tint="@color/STE_bluelight"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -67,7 +67,7 @@
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView3"
-        tools:src="@drawable/fondo" />
+       />
 
     <TextView
         android:id="@+id/textView3"
