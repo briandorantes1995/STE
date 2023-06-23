@@ -8,6 +8,7 @@ import android.os.StrictMode;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import org.json.JSONObject;
 
@@ -30,6 +31,14 @@ public class MainActivity extends AppCompatActivity {
     String Name;
 
     Integer Rol;
+
+    String LastName;
+
+    Integer Matricula;
+
+    Boolean Payment;
+
+    Integer Date;
 
     OkHttpClient client = new OkHttpClient();
      EditText username;
@@ -72,12 +81,17 @@ public class MainActivity extends AppCompatActivity {
 
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+            Toast.makeText(getApplicationContext(), "Has iniciado Sesion", Toast.LENGTH_SHORT).show();
             data = response.body().string();
             JSONObject json = new JSONObject(data);
             Token = json.getString("token");
             JSONObject Usuario = json.getJSONObject("user");
             Name = Usuario.getString("name");
+            LastName = Usuario.getString("last_name");
             Rol = Usuario.getInt("id");
+            Matricula = Usuario.getInt("matricula");
+            Payment = Usuario.getBoolean("payment_verifed");
+            Date = Usuario.getInt("expiration_at");
             if (Token != null) {
                 Intent secondActivityIntent = new Intent(this, Home.class);
                 secondActivityIntent.putExtra("Name",Name);
@@ -86,6 +100,6 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(secondActivityIntent);
             }
         }
-    }
+    }//fin post
 
 }

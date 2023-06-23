@@ -17,6 +17,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -78,6 +79,7 @@ public class PaymentFragment extends Fragment {
             public void onClick(View v) {
                 try {
                     Post(selectedImageBitmap,Name,Token);
+                    Toast.makeText(getContext().getApplicationContext(), "se ha enviado el pago correctamente", Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
