@@ -8,6 +8,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,8 +21,10 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
 
     private DrawerLayout drawerLayout;
     String Name;
-    Integer Rolusuario;
+    String Rolusuario;
     String Token;
+
+    SharedPreferences sh;
 
     TextView Usuario;
     TextView Roles;
@@ -29,10 +33,10 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         //Datos pasados por activity de login
-        Bundle datos = this.getIntent().getExtras();
-        Name = datos.getString("Name");
-        Rolusuario = datos.getInt("Rol");
-        Token = datos.getString("Token");
+        sh = getSharedPreferences("MySharedPref", MODE_PRIVATE);
+        Name = sh.getString("name", "");
+        Rolusuario = sh.getString("role", "");
+        Token = sh.getString("token", "");
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
@@ -46,14 +50,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         Usuario = header.findViewById(R.id.nombreusuario);
         Roles = header.findViewById(R.id.Rol);
         Usuario.setText(Name);
-        switch (Rolusuario){
-            case 1:
-                Roles.setText("Admin");
-            case 2:
-                Roles.setText("Usuario");
-            case 3:
-                Roles.setText("Chofer");
-        }
+        Roles.setText(Rolusuario);
 
         //fin info del header
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.open_nav,
@@ -70,11 +67,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         if(item.getItemId() == R.id.nav_home) {
             Fragment Home = new HomeFragment();
-            Bundle bundle = new Bundle();
-            bundle.putString("Name",Name);
-            bundle.putInt("Rol",Rolusuario);
-            bundle.putString("Token",Token);
-            Home.setArguments(bundle);
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, Home).commit();
         }
         if(item.getItemId() == R.id.nav_location) {
@@ -82,11 +74,6 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         }
         if(item.getItemId() == R.id.nav_payment) {
             Fragment Pay = new PaymentFragment();
-            Bundle bundle = new Bundle();
-            bundle.putString("Name",Name);
-            bundle.putInt("Rol",Rolusuario);
-            bundle.putString("Token",Token);
-            Pay.setArguments(bundle);
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, Pay).commit();
         }
         if(item.getItemId() == R.id.nav_news) {

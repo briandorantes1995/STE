@@ -1,8 +1,8 @@
 package com.example.ste;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.view.View;
@@ -38,6 +38,10 @@ public class MainActivity extends AppCompatActivity {
 
     Boolean Payment;
 
+    Boolean onBoard;
+
+    String role;
+
     Integer Date;
 
     OkHttpClient client = new OkHttpClient();
@@ -45,12 +49,19 @@ public class MainActivity extends AppCompatActivity {
      EditText password;
     Button loginButton;
 
+    SharedPreferences sharedPref;
+    SharedPreferences.Editor editor;
+
 
     protected void onCreate(Bundle savedInstanceState) {
         StrictMode.ThreadPolicy policy = new
                 StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         super.onCreate(savedInstanceState);
+        //guardar info en shared preferences
+        sharedPref = getSharedPreferences("MySharedPref", MODE_PRIVATE);
+        editor = sharedPref.edit();
+        //fin
         setContentView(R.layout.activity_main);
         username = findViewById(R.id.usuario);
         password = findViewById(R.id.password);
@@ -92,12 +103,27 @@ public class MainActivity extends AppCompatActivity {
             Matricula = Usuario.getInt("matricula");
             Payment = Usuario.getBoolean("payment_verifed");
             Date = Usuario.getInt("expiration_at");
+            onBoard = Usuario.getBoolean("onboard");
+            role = Usuario.getString("role");
             if (Token != null) {
-                Intent secondActivityIntent = new Intent(this, Home.class);
-                secondActivityIntent.putExtra("Name",Name);
-                secondActivityIntent.putExtra("Rol",Rol);
-                secondActivityIntent.putExtra("Token",Token);
-                startActivity(secondActivityIntent);
+                editor.putString("name",Name);
+                editor.putString("last_name",LastName);
+                editor.putInt("id",Rol);
+                editor.putInt("matricula",Matricula);
+                editor.putBoolean("payment_verifed",Payment);
+                editor.putInt("expiration_at",Date);
+                editor.putBoolean("onboard",onBoard);
+                editor.putString("role",role);
+                editor.putString("token",Token);
+                editor.apply();
+                Intent user = new Intent(this, Home.class);
+                Intent chofer = new Intent(this, QrReader.class);
+                if(role.equals("chofer")){
+                    startActivity(chofer);
+                }else{
+                    startActivity(user);
+                }
+
             }
         }
     }//fin post

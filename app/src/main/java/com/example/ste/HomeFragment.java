@@ -1,5 +1,7 @@
 package com.example.ste;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
@@ -20,8 +22,10 @@ import java.net.URL;
 public class HomeFragment extends Fragment {
 
     String Name;
-    Integer Rolusuario;
+    String Rolusuario;
     String Token;
+
+    SharedPreferences sh;
 
     ImageView credencial;
 
@@ -40,11 +44,10 @@ public class HomeFragment extends Fragment {
         // Inflate the layout for this fragment
         View view =  inflater.inflate(R.layout.fragment_home2, container, false);
 //Recuperar datos
-        if (getArguments() != null) {
-            Name= getArguments().getString("Name",null);
-            Rolusuario= getArguments().getInt("Rol");
-            Token= getArguments().getString("Token",null);
-        }
+        sh = this.getActivity().getSharedPreferences("MySharedPref", Context.MODE_PRIVATE);
+        Name = sh.getString("name", "");
+        Rolusuario = sh.getString("role", "");
+        Token = sh.getString("token", "");
 
         InputStream URLcontent = null;
         try {

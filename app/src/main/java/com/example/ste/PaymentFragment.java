@@ -1,7 +1,9 @@
 package com.example.ste;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
 import android.net.Uri;
@@ -34,8 +36,10 @@ import okhttp3.Response;
 
 public class PaymentFragment extends Fragment {
     String Name;
-    Integer Rolusuario;
+    String Rolusuario;
     String Token;
+
+    SharedPreferences sh;
 
     Button BSelectImage;
 
@@ -53,11 +57,11 @@ public class PaymentFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_payment, container, false);
         //Inicio Recuperar Datos usuario
-        if (getArguments() != null) {
-            Name= getArguments().getString("Name",null);
-            Rolusuario= getArguments().getInt("Rol");
-            Token= getArguments().getString("Token",null);
-        }//fin recuperar datos
+        sh = this.getActivity().getSharedPreferences("MySharedPref", Context.MODE_PRIVATE);
+        Name = sh.getString("name", "");
+        Rolusuario = sh.getString("role", "");
+        Token = sh.getString("token", "");
+        //fin recuperar datos
 
 
         BSelectImage = view.findViewById(R.id.subirarchivo);
@@ -78,7 +82,7 @@ public class PaymentFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 try {
-                    Post(selectedImageBitmap,Name,Token);
+                    Post(selectedImageBitmap,Token);
                     Toast.makeText(getContext().getApplicationContext(), "se ha enviado el pago correctamente", Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -128,11 +132,10 @@ public class PaymentFragment extends Fragment {
             });//fin de seleccion de imagen
 
 
-    public void Post(Bitmap Image ,String nombre,String userToken) throws Exception {
+    public void Post(Bitmap Image,String userToken) throws Exception {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         Image.compress(Bitmap.CompressFormat.JPEG, 100, stream);
         byte[] byteArray = stream.toByteArray();
-        String encodedImage = Base64.encodeToString(byteArray, Base64.DEFAULT);
 
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
