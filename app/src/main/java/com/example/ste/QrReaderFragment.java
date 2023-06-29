@@ -1,51 +1,81 @@
 package com.example.ste;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
+import android.content.Context;
+import android.os.Bundle;
 
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.webkit.URLUtil;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 
-import java.io.IOException;
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class QrReader extends AppCompatActivity {
+import java.io.IOException;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+public class QrReaderFragment extends Fragment {
+
     private CameraSource cameraSource;
     private SurfaceView cameraView;
     private final int MY_PERMISSIONS_REQUEST_CAMERA = 1;
     private String token = "";
     private String tokenanterior = "";
 
+    String Token;
+
+    Context thiscontext;
+    OkHttpClient client = new OkHttpClient();
+
+    View view;
+
+    JSONObject json;
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_qr_reader);
-        cameraView = (SurfaceView) findViewById(R.id.camera_view);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        view = inflater.inflate(R.layout.fragment_qr_reader, container, false);
+        cameraView = (SurfaceView) view.findViewById(R.id.camera_view);
+        thiscontext = container.getContext();
         initQR();
+        return view;
     }
+
+
     public void initQR() {
 
         // creo el detector qr
         BarcodeDetector barcodeDetector =
-                new BarcodeDetector.Builder(this)
+                new BarcodeDetector.Builder(thiscontext)
                         .setBarcodeFormats(Barcode.ALL_FORMATS)
                         .build();
 
         // creo la camara
         cameraSource = new CameraSource
-                .Builder(this, barcodeDetector)
+                .Builder(thiscontext, barcodeDetector)
                 .setRequestedPreviewSize(1600, 1024)
                 .setAutoFocusEnabled(true) //you should add this feature
                 .build();
@@ -56,7 +86,7 @@ public class QrReader extends AppCompatActivity {
             public void surfaceCreated(SurfaceHolder holder) {
 
                 // verifico si el usuario dio los permisos para la camara
-                if (ActivityCompat.checkSelfPermission(QrReader.this, android.Manifest.permission.CAMERA)
+                if (ActivityCompat.checkSelfPermission(thiscontext, android.Manifest.permission.CAMERA)
                         != PackageManager.PERMISSION_GRANTED) {
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -116,12 +146,14 @@ public class QrReader extends AppCompatActivity {
                             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(token));
                             startActivity(browserIntent);
                         } else {
-                            // comparte en otras apps
-                            Intent shareIntent = new Intent();
-                            shareIntent.setAction(Intent.ACTION_SEND);
-                            shareIntent.putExtra(Intent.EXTRA_TEXT, token);
-                            shareIntent.setType("text/plain");
-                            startActivity(shareIntent);
+                            try {
+                                json = new JSONObject(token);
+                                Token = json.getString("token");
+                                Post(Token);
+                                Toast.makeText(view.getContext() ,"QR escaneado exitopsamente", Toast.LENGTH_SHORT).show();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
 
                         new Thread(new Runnable() {
@@ -140,10 +172,37 @@ public class QrReader extends AppCompatActivity {
                             }
                         }).start();
 
+                    }else{
+                        Toast.makeText(view.getContext() ,"QR escaneado previamente", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
         });
 
-    }//fin init qr
+    }//fin qr
+
+
+    public void Post( String userToken) throws Exception {
+        RequestBody requestBody = new FormBody.Builder()
+                .build();
+
+        Request request = new Request.Builder()
+                .url("https://api-ste.smartte.com.mx/apiv2/updateOnboard")
+                .addHeader("cache-control", "no-cache")
+                .addHeader("Authorization" , "Bearer " + userToken)
+                .post(requestBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+            }
+        });
+    }//fin post
 }

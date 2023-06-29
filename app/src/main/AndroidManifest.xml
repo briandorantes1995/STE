@@ -9,7 +9,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CAMERA" />
-    
 
     <application
         android:allowBackup="true"
@@ -24,7 +23,7 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
         <activity
-            android:name=".QrReader"
+            android:name=".HomeChofer"
             android:exported="false" />
         <activity
             android:name=".Home"

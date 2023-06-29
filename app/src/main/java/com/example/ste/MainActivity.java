@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 editor.putString("token",Token);
                 editor.apply();
                 Intent user = new Intent(this, Home.class);
-                Intent chofer = new Intent(this, QrReader.class);
+                Intent chofer = new Intent(this, HomeChofer.class);
                 if(role.equals("chofer")){
                     startActivity(chofer);
                 }else{

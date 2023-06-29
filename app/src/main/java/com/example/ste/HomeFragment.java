@@ -51,7 +51,6 @@ public class HomeFragment extends Fragment {
 
         InputStream URLcontent = null;
         try {
-            DatosQR.put("nombre",Name);
             DatosQR.put("token",Token);
             URLcontent = (InputStream) new URL("http://api.qrserver.com/v1/create-qr-code/?data="+DatosQR+"&size=100x100&color=0-0-255").getContent();
         } catch (IOException | JSONException e) {

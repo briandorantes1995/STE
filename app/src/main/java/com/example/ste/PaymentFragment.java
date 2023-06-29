@@ -51,11 +51,14 @@ public class PaymentFragment extends Fragment {
 
     OkHttpClient client = new OkHttpClient();
 
+    Context thiscontext;
+
     int SELECT_PICTURE = 200;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_payment, container, false);
+        thiscontext = container.getContext();
         //Inicio Recuperar Datos usuario
         sh = this.getActivity().getSharedPreferences("MySharedPref", Context.MODE_PRIVATE);
         Name = sh.getString("name", "");
@@ -83,7 +86,7 @@ public class PaymentFragment extends Fragment {
             public void onClick(View v) {
                 try {
                     Post(selectedImageBitmap,Token);
-                    Toast.makeText(getContext().getApplicationContext(), "se ha enviado el pago correctamente", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(thiscontext, "se ha enviado el pago correctamente", Toast.LENGTH_SHORT).show();
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
