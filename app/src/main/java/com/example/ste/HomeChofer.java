@@ -70,7 +70,7 @@ public class HomeChofer extends AppCompatActivity implements NavigationView.OnNa
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, Home).commit();
         }
         if(item.getItemId() == R.id.nav_ubicacion) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new NewsFragment()).commit();
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new UbicacioChofer()).commit();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);

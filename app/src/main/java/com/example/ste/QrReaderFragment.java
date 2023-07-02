@@ -150,7 +150,7 @@ public class QrReaderFragment extends Fragment {
                                 json = new JSONObject(token);
                                 Token = json.getString("token");
                                 Post(Token);
-                                Toast.makeText(view.getContext() ,"QR escaneado exitopsamente", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(getActivity() ,"QR escaneado exitopsamente", Toast.LENGTH_SHORT).show();
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -173,7 +173,7 @@ public class QrReaderFragment extends Fragment {
                         }).start();
 
                     }else{
-                        Toast.makeText(view.getContext() ,"QR escaneado previamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getActivity() ,"QR escaneado previamente", Toast.LENGTH_SHORT).show();
                     }
                 }
             }
