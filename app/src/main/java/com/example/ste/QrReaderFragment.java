@@ -59,7 +59,7 @@ public class QrReaderFragment extends Fragment {
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_qr_reader, container, false);
         cameraView = (SurfaceView) view.findViewById(R.id.camera_view);
-        thiscontext = container.getContext();
+        thiscontext = view.getContext();
         initQR();
         return view;
     }
@@ -150,7 +150,7 @@ public class QrReaderFragment extends Fragment {
                                 json = new JSONObject(token);
                                 Token = json.getString("token");
                                 Post(Token);
-                                Toast.makeText(getActivity() ,"QR escaneado exitopsamente", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(thiscontext ,"QR escaneado exitopsamente", Toast.LENGTH_SHORT).show();
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -173,7 +173,7 @@ public class QrReaderFragment extends Fragment {
                         }).start();
 
                     }else{
-                        Toast.makeText(getActivity() ,"QR escaneado previamente", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(thiscontext ,"QR escaneado previamente", Toast.LENGTH_SHORT).show();
                     }
                 }
             }

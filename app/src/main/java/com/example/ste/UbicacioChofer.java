@@ -1,12 +1,10 @@
 package com.example.ste;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
-import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -26,6 +24,11 @@ import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
@@ -34,18 +37,22 @@ public class UbicacioChofer extends Fragment {
     View view;
     Button btLocation;
     double Latitude, Longitude;
+
     FusedLocationProviderClient client;
+    GoogleMap mMap;
+
+    SupportMapFragment mapFragment;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_ubicacio_chofer, container, false);
         btLocation = view.findViewById(R.id.obtenerubicacion);
-
+        mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+        assert mapFragment != null;
         client = LocationServices
                 .getFusedLocationProviderClient(
                         getActivity());
-
         btLocation.setOnClickListener(
                 new View.OnClickListener() {
                     @Override public void onClick(View view)
@@ -66,10 +73,6 @@ public class UbicacioChofer extends Fragment {
                             // When permission is granted
                             // Call method
                             getCurrentLocation();
-                            String strUri = "http://maps.google.com/maps?q=loc:" + Latitude + "," + Longitude + " (" + "Ubicacion Actual" + ")";
-                            Intent intent = new Intent(android.content.Intent.ACTION_VIEW, Uri.parse(strUri));
-                            intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
-                            startActivity(intent);
                         }
                         else {
                             // When permission is not granted
@@ -84,9 +87,10 @@ public class UbicacioChofer extends Fragment {
                         }
                     }
                 });
-
-        return view;
+     return view;
     }
+
+
 
     @Override
     public void onRequestPermissionsResult(
@@ -103,6 +107,7 @@ public class UbicacioChofer extends Fragment {
             // Call  method
             getCurrentLocation();
         }
+
         else {
             // When permission are denied
             // Display toast
@@ -112,14 +117,14 @@ public class UbicacioChofer extends Fragment {
                             Toast.LENGTH_SHORT)
                     .show();
         }
+
     }
 
     @SuppressLint("MissingPermission")
-    private void getCurrentLocation()
-    {
+    private void getCurrentLocation() {
         // Initialize Location manager
         LocationManager locationManager
-                = (LocationManager)getActivity()
+                = (LocationManager) getActivity()
                 .getSystemService(
                         Context.LOCATION_SERVICE);
         // Check condition
@@ -133,8 +138,7 @@ public class UbicacioChofer extends Fragment {
                     new OnCompleteListener<Location>() {
                         @Override
                         public void onComplete(
-                                @NonNull Task<Location> task)
-                        {
+                                @NonNull Task<Location> task) {
 
                             // Initialize location
                             Location location
@@ -146,8 +150,8 @@ public class UbicacioChofer extends Fragment {
                                 Latitude = location.getLatitude();
                                 // set longitude
                                 Longitude = location.getLongitude();
-                            }
-                            else {
+                                mapFragment.getMapAsync(this::onMapReady);
+                            } else {
                                 // When location result is null
                                 // initialize location request
                                 LocationRequest locationRequest
@@ -168,8 +172,7 @@ public class UbicacioChofer extends Fragment {
                                     public void
                                     onLocationResult(
                                             LocationResult
-                                                    locationResult)
-                                    {
+                                                    locationResult) {
                                         // Initialize
                                         // location
                                         Location location1
@@ -189,9 +192,16 @@ public class UbicacioChofer extends Fragment {
                                         Looper.myLooper());
                             }
                         }
+                        public void onMapReady(@NonNull GoogleMap googleMap) {
+                            mMap = googleMap;
+                            mMap.setMinZoomPreference(15.0f);
+                            mMap.setMaxZoomPreference(20.0f);
+                            LatLng mexico = new LatLng(Latitude,Longitude);
+                            mMap.addMarker(new MarkerOptions().position(mexico).title("México"));
+                            mMap.moveCamera(CameraUpdateFactory.newLatLng(mexico));
+                        }
                     });
-        }
-        else {
+        } else {
             // When location service is not enabled
             // open location setting
             startActivity(
