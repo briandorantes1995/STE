@@ -1,23 +1,27 @@
 package com.example.ste;
-import android.annotation.SuppressLint;
+
+import static android.content.Context.MODE_PRIVATE;
+
+import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
-import android.location.LocationManager;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import android.os.Looper;
-import android.provider.Settings;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -26,190 +30,242 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 
-public class UbicacioChofer extends Fragment {
+import java.io.IOException;
 
-    View view;
-    Button btLocation;
-    double Latitude, Longitude;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
-    FusedLocationProviderClient client;
-    GoogleMap mMap;
+public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
 
-    SupportMapFragment mapFragment;
+    private static final String TAG = "UbicacioChofer";
+    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
+    private static final int DEFAULT_ZOOM = 15;
+    private static final String KEY_CAMERA_POSITION = "camera_position";
+    private static final String KEY_LOCATION = "location";
+    private final LatLng defaultLocation = new LatLng(-33.8523341, 151.2106085);
+
+    private View view;
+    private FusedLocationProviderClient client;
+    private GoogleMap map;
+    private CameraPosition cameraPosition;
+    private boolean locationPermissionGranted;
+    private Location lastKnownLocation;
+    private SupportMapFragment mapFragment;
+    private LocationCallback locationCallback;
+
+    private OkHttpClient cliente = new OkHttpClient();
+
+    SharedPreferences sharedPref;
+
+    String token;
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_ubicacio_chofer, container, false);
-        btLocation = view.findViewById(R.id.obtenerubicacion);
+        sharedPref = this.getActivity().getSharedPreferences("MySharedPref", MODE_PRIVATE);
+        token = sharedPref.getString("token", null);
+        client = LocationServices.getFusedLocationProviderClient(requireContext());
         mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
-        assert mapFragment != null;
-        client = LocationServices
-                .getFusedLocationProviderClient(
-                        getActivity());
-        btLocation.setOnClickListener(
-                new View.OnClickListener() {
-                    @Override public void onClick(View view)
-                    {
-                        // check condition
-                        if (ContextCompat.checkSelfPermission(
-                                getActivity(),
-                                android.Manifest.permission
-                                        .ACCESS_FINE_LOCATION)
-                                == PackageManager
-                                .PERMISSION_GRANTED
-                                && ContextCompat.checkSelfPermission(
-                                getActivity(),
-                                android.Manifest.permission
-                                        .ACCESS_COARSE_LOCATION)
-                                == PackageManager
-                                .PERMISSION_GRANTED) {
-                            // When permission is granted
-                            // Call method
-                            getCurrentLocation();
-                        }
-                        else {
-                            // When permission is not granted
-                            // Call method
-                            requestPermissions(
-                                    new String[] {
-                                            android.Manifest.permission
-                                                    .ACCESS_FINE_LOCATION,
-                                            android.Manifest.permission
-                                                    .ACCESS_COARSE_LOCATION },
-                                    100);
+        getLocationPermission();
+        return view;
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        map = googleMap;
+        getDeviceLocation();
+        updateLocationUI();
+        startLocationUpdates();
+    }
+
+    private void getLocationPermission() {
+        if (ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationPermissionGranted = true;
+            initializeMap();
+        } else {
+            ActivityCompat.requestPermissions(requireActivity(),
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
+        }
+    }
+
+    private void initializeMap() {
+        mapFragment.getMapAsync(this);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        locationPermissionGranted = false;
+        if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                locationPermissionGranted = true;
+                initializeMap();
+            }
+        }
+    }
+
+    private void updateLocationUI() {
+        if (map == null) {
+            return;
+        }
+        try {
+            if (locationPermissionGranted) {
+                map.setMyLocationEnabled(true);
+                map.getUiSettings().setMyLocationButtonEnabled(true);
+            } else {
+                map.setMyLocationEnabled(false);
+                map.getUiSettings().setMyLocationButtonEnabled(false);
+                lastKnownLocation = null;
+                getLocationPermission();
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Exception: " + e.getMessage(), e);
+        }
+    }
+
+    private void getDeviceLocation() {
+        try {
+            if (locationPermissionGranted) {
+                Task<Location> locationResult = client.getLastLocation();
+                locationResult.addOnCompleteListener(requireActivity(), new OnCompleteListener<Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Location> task) {
+                        if (task.isSuccessful()) {
+                            lastKnownLocation = task.getResult();
+                            if (lastKnownLocation != null) {
+                                map.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                                        new LatLng(lastKnownLocation.getLatitude(),
+                                                lastKnownLocation.getLongitude()), DEFAULT_ZOOM));
+                            } else {
+                                Log.d(TAG, "Current location is null. Using defaults.");
+                                map.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, DEFAULT_ZOOM));
+                                map.getUiSettings().setMyLocationButtonEnabled(false);
+                            }
+                        } else {
+                            Log.e(TAG, "Exception: " + task.getException());
                         }
                     }
                 });
-     return view;
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Exception: " + e.getMessage(), e);
+        }
     }
 
+    private void startLocationUpdates() {
+        try {
+            LocationRequest locationRequest = LocationRequest.create();
+            locationRequest.setInterval(10000);
+            locationRequest.setFastestInterval(10000);
+            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
+            locationCallback = new LocationCallback() {
+                @Override
+                public void onLocationResult(LocationResult locationResult) {
+                    super.onLocationResult(locationResult);
+                    if (locationResult != null) {
+                        Location location = locationResult.getLastLocation();
+                        if (location != null) {
+                            lastKnownLocation = location;
+                            updateMapLocation();
+                        }
+                    }
+                }
+            };
+
+            if (locationPermissionGranted) {
+                client.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+            }
+        } catch (SecurityException e) {
+            Log.e(TAG, "Exception: " + e.getMessage(), e);
+        }
+    }
+
+    private void updateMapLocation() {
+        if (map != null && lastKnownLocation != null) {
+            LatLng latLng = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+            map.clear();
+            map.addMarker(new MarkerOptions().position(latLng).title("Current Location"));
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
+            String latitude = String.valueOf(lastKnownLocation.getLatitude());
+            String longitude = String.valueOf(lastKnownLocation.getLongitude());
+            try {
+                Put(token, latitude, longitude);
+            } catch (Exception e) {
+                Log.e(TAG, "Error en la solicitud PUT: " + e.getMessage(), e);
+            }
+        }
+    }
 
     @Override
-    public void onRequestPermissionsResult(
-            int requestCode, @NonNull String[] permissions,
-            @NonNull int[] grantResults)
-    {
-        super.onRequestPermissionsResult(
-                requestCode, permissions, grantResults);
-        // Check condition
-        if (requestCode == 100 && (grantResults.length > 0)
-                && (grantResults[0] + grantResults[1]
-                == PackageManager.PERMISSION_GRANTED)) {
-            // When permission are granted
-            // Call  method
-            getCurrentLocation();
+    public void onSaveInstanceState(Bundle outState) {
+        if (map != null) {
+            outState.putParcelable(KEY_CAMERA_POSITION, map.getCameraPosition());
+            outState.putParcelable(KEY_LOCATION, lastKnownLocation);
         }
-
-        else {
-            // When permission are denied
-            // Display toast
-            Toast
-                    .makeText(getActivity(),
-                            "Permission denied",
-                            Toast.LENGTH_SHORT)
-                    .show();
-        }
-
+        super.onSaveInstanceState(outState);
     }
 
-    @SuppressLint("MissingPermission")
-    private void getCurrentLocation() {
-        // Initialize Location manager
-        LocationManager locationManager
-                = (LocationManager) getActivity()
-                .getSystemService(
-                        Context.LOCATION_SERVICE);
-        // Check condition
-        if (locationManager.isProviderEnabled(
-                LocationManager.GPS_PROVIDER)
-                || locationManager.isProviderEnabled(
-                LocationManager.NETWORK_PROVIDER)) {
-            // When location service is enabled
-            // Get last location
-            client.getLastLocation().addOnCompleteListener(
-                    new OnCompleteListener<Location>() {
-                        @Override
-                        public void onComplete(
-                                @NonNull Task<Location> task) {
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        stopLocationUpdates();
+    }
 
-                            // Initialize location
-                            Location location
-                                    = task.getResult();
-                            // Check condition
-                            if (location != null) {
-                                // When location result is not
-                                // null set latitude
-                                Latitude = location.getLatitude();
-                                // set longitude
-                                Longitude = location.getLongitude();
-                                mapFragment.getMapAsync(this::onMapReady);
-                            } else {
-                                // When location result is null
-                                // initialize location request
-                                LocationRequest locationRequest
-                                        = new LocationRequest()
-                                        .setPriority(
-                                                LocationRequest
-                                                        .PRIORITY_HIGH_ACCURACY)
-                                        .setInterval(10000)
-                                        .setFastestInterval(
-                                                1000)
-                                        .setNumUpdates(1);
-
-                                // Initialize location call back
-                                LocationCallback
-                                        locationCallback
-                                        = new LocationCallback() {
-                                    @Override
-                                    public void
-                                    onLocationResult(
-                                            LocationResult
-                                                    locationResult) {
-                                        // Initialize
-                                        // location
-                                        Location location1
-                                                = locationResult
-                                                .getLastLocation();
-                                        // Set latitude
-                                        Latitude = location1.getLatitude();
-                                        // Set longitude
-                                        Longitude = location1.getLongitude();
-                                    }
-                                };
-
-                                // Request location updates
-                                client.requestLocationUpdates(
-                                        locationRequest,
-                                        locationCallback,
-                                        Looper.myLooper());
-                            }
-                        }
-                        public void onMapReady(@NonNull GoogleMap googleMap) {
-                            mMap = googleMap;
-                            mMap.setMinZoomPreference(15.0f);
-                            mMap.setMaxZoomPreference(20.0f);
-                            LatLng mexico = new LatLng(Latitude,Longitude);
-                            mMap.addMarker(new MarkerOptions().position(mexico).title("México"));
-                            mMap.moveCamera(CameraUpdateFactory.newLatLng(mexico));
-                        }
-                    });
-        } else {
-            // When location service is not enabled
-            // open location setting
-            startActivity(
-                    new Intent(
-                            Settings
-                                    .ACTION_LOCATION_SOURCE_SETTINGS)
-                            .setFlags(
-                                    Intent.FLAG_ACTIVITY_NEW_TASK));
+    private void stopLocationUpdates() {
+        if (locationCallback != null) {
+            client.removeLocationUpdates(locationCallback);
         }
     }
-}//fin clase
+
+
+    public void Put(String userToken,String Latitude,String Longitude) throws Exception {
+        RequestBody formBody = new FormBody.Builder()
+                .add("latitude", Latitude)
+                .add("longitude", Longitude)
+                .build();
+        Request request = new Request.Builder()
+                .url("https://api-ste.smartte.com.mx/apiv2/geolocation")
+                .addHeader("cache-control", "no-cache")
+                .addHeader("Authorization", "Bearer " + userToken)
+                .put(formBody)
+                .build();
+
+        cliente.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                Log.e(TAG, "Error en la solicitud POST: " + e.getMessage(), e);
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                // Maneja la respuesta aquí si es necesario
+            }
+        });
+
+    }
+}
+
+
+

@@ -9,6 +9,7 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -25,6 +26,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     String Token;
 
     SharedPreferences sh;
+    SharedPreferences.Editor editor;
 
     TextView Usuario;
     TextView Roles;
@@ -34,6 +36,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
     protected void onCreate(Bundle savedInstanceState) {
         //Datos pasados por activity de login
         sh = getSharedPreferences("MySharedPref", MODE_PRIVATE);
+        editor = sh.edit();
         Name = sh.getString("name", "");
         Rolusuario = sh.getString("role", "");
         Token = sh.getString("token", "");
@@ -81,6 +84,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         }
         if(item.getItemId() == R.id.nav_logout) {
                 Toast.makeText(this, "Logout!", Toast.LENGTH_SHORT).show();
+                clearSession();
         }
 
         drawerLayout.closeDrawer(GravityCompat.START);
@@ -93,6 +97,22 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
         } else {
             super.onBackPressed();
         }
+    }
+
+
+    private void clearSession() {
+        editor.remove("token");
+        editor.remove("name");
+        editor.remove("last_name");
+        editor.remove("id");
+        editor.remove("matricula");
+        editor.remove("payment_verifed");
+        editor.remove("expiration_at");
+        editor.remove("onboard");
+        editor.remove("role");
+        editor.remove("route_id");
+        editor.apply();
+        startActivity(new Intent(this, MainActivity.class));
     }
 
 }

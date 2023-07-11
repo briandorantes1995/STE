@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.auth0.android.jwt.JWT;
+
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -43,6 +45,9 @@ public class MainActivity extends AppCompatActivity {
     String role;
 
     Integer Date;
+    Integer Route;
+
+    String Tok;
 
     OkHttpClient client = new OkHttpClient();
      EditText username;
@@ -66,6 +71,9 @@ public class MainActivity extends AppCompatActivity {
         username = findViewById(R.id.usuario);
         password = findViewById(R.id.password);
         loginButton = findViewById(R.id.iniciarsesion);
+        checkSession();
+
+
 
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -81,6 +89,9 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void Post(String User,String Password) throws Exception {
+
+
+
         RequestBody formBody = new FormBody.Builder()
                 .add("user", User)
                 .add("password", Password)
@@ -96,16 +107,18 @@ public class MainActivity extends AppCompatActivity {
             data = response.body().string();
             JSONObject json = new JSONObject(data);
             Token = json.getString("token");
-            JSONObject Usuario = json.getJSONObject("user");
-            Name = Usuario.getString("name");
-            LastName = Usuario.getString("last_name");
-            Rol = Usuario.getInt("id");
-            Matricula = Usuario.getInt("matricula");
-            Payment = Usuario.getBoolean("payment_verifed");
-            Date = Usuario.getInt("expiration_at");
-            onBoard = Usuario.getBoolean("onboard");
-            role = Usuario.getString("role");
+            JWT jwt = new JWT(Token);
+            Name = jwt.getClaim("name").asString();
+            LastName = jwt.getClaim("last_name").asString();
+            Rol = jwt.getClaim("id").asInt();
+            Matricula = jwt.getClaim("matricula").asInt();
+            Payment = jwt.getClaim("payment_verifed").asBoolean();
+            Date = jwt.getClaim("expiration_at").asInt();
+            onBoard = jwt.getClaim("onboard").asBoolean();
+            role = jwt.getClaim("role").asString();
+            Route = jwt.getClaim("route_id").asInt();
             if (Token != null) {
+                editor.putString("token",Token);
                 editor.putString("name",Name);
                 editor.putString("last_name",LastName);
                 editor.putInt("id",Rol);
@@ -114,18 +127,31 @@ public class MainActivity extends AppCompatActivity {
                 editor.putInt("expiration_at",Date);
                 editor.putBoolean("onboard",onBoard);
                 editor.putString("role",role);
-                editor.putString("token",Token);
+                editor.putInt("route_id",Route);
                 editor.apply();
-                Intent user = new Intent(this, Home.class);
-                Intent chofer = new Intent(this, HomeChofer.class);
-                if(role.equals("chofer")){
-                    startActivity(chofer);
-                }else{
-                    startActivity(user);
+                if (role.equals("chofer")) {
+                    startActivity(new Intent(this, HomeChofer.class));
+                } else {
+                    startActivity(new Intent(this, Home.class));
                 }
-
             }
         }
     }//fin post
+
+    private void checkSession() {
+        String token = sharedPref.getString("token", null);
+        if (token != null) {
+            // Si hay un token almacenado, iniciar la actividad correspondiente según el rol del usuario
+            String role = sharedPref.getString("role", null);
+            if (role != null) {
+                if (role.equals("chofer")) {
+                    startActivity(new Intent(this, HomeChofer.class));
+                } else {
+                    startActivity(new Intent(this, Home.class));
+                }
+                finish(); // Finalizar la actividad actual
+            }
+        }
+    }//fin check sesion
 
 }
