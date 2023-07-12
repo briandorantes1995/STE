@@ -73,6 +73,7 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
     SharedPreferences sharedPref;
 
     String token;
+    Integer ruta;
 
 
 
@@ -82,6 +83,7 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
         view = inflater.inflate(R.layout.fragment_ubicacio_chofer, container, false);
         sharedPref = this.getActivity().getSharedPreferences("MySharedPref", MODE_PRIVATE);
         token = sharedPref.getString("token", null);
+        ruta = sharedPref.getInt("route_id", 0);
         client = LocationServices.getFusedLocationProviderClient(requireContext());
         mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map);
         getLocationPermission();
@@ -189,6 +191,13 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
                         if (location != null) {
                             lastKnownLocation = location;
                             updateMapLocation();
+                            try {
+                                String latitude = String.valueOf(location.getLatitude());
+                                String longitude = String.valueOf(location.getLongitude());
+                                Put(token , latitude, longitude, ruta);
+                            } catch (Exception e) {
+                                Log.e(TAG, "Error en la solicitud PUT: " + e.getMessage(), e);
+                            }
                         }
                     }
                 }
@@ -202,16 +211,19 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
         }
     }
 
+
     private void updateMapLocation() {
         if (map != null && lastKnownLocation != null) {
             LatLng latLng = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
             map.clear();
-            map.addMarker(new MarkerOptions().position(latLng).title("Current Location"));
+            map.addMarker(new MarkerOptions().position(latLng).title("Posicion Actual").icon(BitmapFromVector(
+                    getActivity(),
+                    R.drawable.marcadorautobus)));
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
             String latitude = String.valueOf(lastKnownLocation.getLatitude());
             String longitude = String.valueOf(lastKnownLocation.getLongitude());
             try {
-                Put(token, latitude, longitude);
+                Put(token, latitude, longitude,ruta);
             } catch (Exception e) {
                 Log.e(TAG, "Error en la solicitud PUT: " + e.getMessage(), e);
             }
@@ -240,10 +252,11 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
     }
 
 
-    public void Put(String userToken,String Latitude,String Longitude) throws Exception {
+    public void Put(String userToken,String Latitude,String Longitude,Integer Ruta) throws Exception {
         RequestBody formBody = new FormBody.Builder()
                 .add("latitude", Latitude)
                 .add("longitude", Longitude)
+                .add("route",Ruta.toString())
                 .build();
         Request request = new Request.Builder()
                 .url("https://api-ste.smartte.com.mx/apiv2/geolocation")
@@ -264,6 +277,38 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
             }
         });
 
+    }
+
+    private BitmapDescriptor
+    BitmapFromVector(Context context, int vectorResId)
+    {
+        // below line is use to generate a drawable.
+        Drawable vectorDrawable = ContextCompat.getDrawable(
+                context, vectorResId);
+
+        // below line is use to set bounds to our vector
+        // drawable.
+        vectorDrawable.setBounds(
+                0, 0, vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight());
+
+        // below line is use to create a bitmap for our
+        // drawable which we have added.
+        Bitmap bitmap = Bitmap.createBitmap(
+                vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888);
+
+        // below line is use to add bitmap in our canvas.
+        Canvas canvas = new Canvas(bitmap);
+
+        // below line is use to draw our
+        // vector drawable in canvas.
+        vectorDrawable.draw(canvas);
+
+        // after generating our bitmap we are returning our
+        // bitmap.
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }
 

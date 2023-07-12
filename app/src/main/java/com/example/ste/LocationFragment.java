@@ -2,14 +2,14 @@ package com.example.ste;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import android.Manifest;
+import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.location.Location;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -20,45 +20,35 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 
-import okhttp3.Call;
-import okhttp3.Callback;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+
 public class LocationFragment extends Fragment implements OnMapReadyCallback {
     private static final String TAG = "UbicacioChofer";
-    private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private static final int DEFAULT_ZOOM = 15;
 
     private View view;
-    private FusedLocationProviderClient fusedLocationClient;
     private GoogleMap map;
     private CameraPosition cameraPosition;
-    private boolean locationPermissionGranted;
-    private Location lastKnownLocation;
     private SupportMapFragment mapFragment;
-    private LocationCallback locationCallback;
 
     private OkHttpClient httpClient;
 
@@ -68,8 +58,11 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
     private double latitude;
     private double longitude;
 
+    Integer ruta;
+
     private Handler handler;
     private static final long UPDATE_INTERVAL = 10 * 1000; // 10 segundos
+
 
     private final LatLng defaultLocation = new LatLng(-33.8523341, 151.2106085);
 
@@ -79,28 +72,33 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
         view = inflater.inflate(R.layout.fragment_location2, container, false);
         sharedPref = requireActivity().getSharedPreferences("MySharedPref", MODE_PRIVATE);
         token = sharedPref.getString("token", null);
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireContext());
+        ruta = sharedPref.getInt("route_id", 0);
         mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map2);
-        getLocationPermission();
+        initializeMap(); // Cambiado desde getLocation()
+        httpClient = new OkHttpClient();
+        handler = new Handler();
         return view;
     }
 
-    public void getLocation(String userToken) {
+
+    public void getLocation() {
+        HttpUrl.Builder urlBuilder = HttpUrl.parse("https://api-ste.smartte.com.mx/apiv2/geolocation").newBuilder();
+        urlBuilder.addQueryParameter("id", ruta.toString());
+        String url = urlBuilder.build().toString();
         Request request = new Request.Builder()
-                .url("https://api-ste.smartte.com.mx/apiv2/location")
-                .addHeader("Authorization", "Bearer " + userToken)
+                .url(url)
+                .addHeader("Authorization", "Bearer " + token)
+                .get()
                 .build();
 
-        httpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "Error en la solicitud GET: " + e.getMessage(), e);
-            }
+        // Ejecutar la solicitud en el hilo principal
+        new Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                Response response = httpClient.newCall(request).execute();
 
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
                 if (response.isSuccessful()) {
                     String responseData = response.body().string();
+                    Log.e(TAG, responseData);
                     try {
                         JSONObject json = new JSONObject(responseData);
                         latitude = json.getDouble("latitude");
@@ -112,15 +110,20 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
                 } else {
                     Log.e(TAG, "Error en la solicitud GET: " + response.code() + " " + response.message());
                 }
+            } catch (IOException e) {
+                Log.e(TAG, "Error en la solicitud GET: " + e.getMessage(), e);
             }
         });
     }
+
 
     private void updateMapLocation(double latitude, double longitude) {
         if (map != null) {
             LatLng latLng = new LatLng(latitude, longitude);
             map.clear(); // Limpiar los marcadores existentes en el mapa
-            map.addMarker(new MarkerOptions().position(latLng).title("Current Location"));
+            map.addMarker(new MarkerOptions().position(latLng).title("Autobus").icon(BitmapFromVector(
+                   getActivity(),
+                    R.drawable.marcadorautobus)));
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
         }
     }
@@ -128,23 +131,8 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         map = googleMap;
-        getDeviceLocation();
-        updateLocationUI();
-        startLocationUpdates();
-        handler = new Handler();
-        getPeriodicLocationUpdates();
-    }
-
-    private void getLocationPermission() {
-        if (ContextCompat.checkSelfPermission(requireContext(),
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationPermissionGranted = true;
-            initializeMap();
-        } else {
-            ActivityCompat.requestPermissions(requireActivity(),
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
-        }
+        getLocation(); // Llama a getLocation() para obtener la ubicación inicial
+        startPeriodicLocationUpdates();
     }
 
     private void initializeMap() {
@@ -152,110 +140,57 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        locationPermissionGranted = false;
-        if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                locationPermissionGranted = true;
-                initializeMap();
-            }
-        }
-    }
-
-    private void updateLocationUI() {
-        if (map == null) {
-            return;
-        }
-        try {
-            if (locationPermissionGranted) {
-                map.setMyLocationEnabled(true);
-                map.getUiSettings().setMyLocationButtonEnabled(true);
-            } else {
-                map.setMyLocationEnabled(false);
-                map.getUiSettings().setMyLocationButtonEnabled(false);
-                lastKnownLocation = null;
-                getLocationPermission();
-            }
-        } catch (SecurityException e) {
-            Log.e(TAG, "Exception: " + e.getMessage(), e);
-        }
-    }
-
-    private void getDeviceLocation() {
-        try {
-            if (locationPermissionGranted) {
-                Task<Location> locationResult = fusedLocationClient.getLastLocation();
-                locationResult.addOnCompleteListener(requireActivity(), task -> {
-                    if (task.isSuccessful()) {
-                        lastKnownLocation = task.getResult();
-                        if (lastKnownLocation != null) {
-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                                    new LatLng(lastKnownLocation.getLatitude(),
-                                            lastKnownLocation.getLongitude()), DEFAULT_ZOOM));
-                        } else {
-                            Log.d(TAG, "Current location is null. Using defaults.");
-                            map.moveCamera(CameraUpdateFactory.newLatLngZoom(defaultLocation, DEFAULT_ZOOM));
-                            map.getUiSettings().setMyLocationButtonEnabled(false);
-                        }
-                    } else {
-                        Log.e(TAG, "Exception: " + task.getException());
-                    }
-                });
-            }
-        } catch (SecurityException e) {
-            Log.e(TAG, "Exception: " + e.getMessage(), e);
-        }
-    }
-
-    private void startLocationUpdates() {
-        try {
-            LocationRequest locationRequest = LocationRequest.create();
-            locationRequest.setInterval(10000);
-            locationRequest.setFastestInterval(10000);
-            locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-
-            locationCallback = new LocationCallback() {
-                @Override
-                public void onLocationResult(LocationResult locationResult) {
-                    super.onLocationResult(locationResult);
-                    if (locationResult != null) {
-                        Location location = locationResult.getLastLocation();
-                        if (location != null) {
-                            lastKnownLocation = location;
-                            latitude = location.getLatitude();
-                            longitude = location.getLongitude();
-                            updateMapLocation(latitude, longitude);
-                        }
-                    }
-                }
-            };
-
-            if (locationPermissionGranted) {
-                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
-            }
-        } catch (SecurityException e) {
-            Log.e(TAG, "Exception: " + e.getMessage(), e);
-        }
-    }
-
-    private void getPeriodicLocationUpdates() {
-        handler.postDelayed(() -> {
-            try {
-                getLocation(token);
-                handler.postDelayed(this::getPeriodicLocationUpdates, UPDATE_INTERVAL);
-            } catch (Exception e) {
-                Log.e(TAG, "Error al obtener la ubicación: " + e.getMessage(), e);
-            }
-        }, UPDATE_INTERVAL);
-    }
-
-    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (fusedLocationClient != null && locationCallback != null) {
-            fusedLocationClient.removeLocationUpdates(locationCallback);
-        }
+    }
+
+    private void startPeriodicLocationUpdates() {
+        handler.post(() -> {
+            try {
+                getLocation();
+            } catch (Exception e) {
+                Log.e(TAG, "Error al obtener la ubicación: " + e.getMessage(), e);
+            } finally {
+                handler.postDelayed(this::startPeriodicLocationUpdates, UPDATE_INTERVAL);
+            }
+        });
+    }
+
+
+    private BitmapDescriptor
+    BitmapFromVector(Context context, int vectorResId)
+    {
+        // below line is use to generate a drawable.
+        Drawable vectorDrawable = ContextCompat.getDrawable(
+                context, vectorResId);
+
+        // below line is use to set bounds to our vector
+        // drawable.
+        vectorDrawable.setBounds(
+                0, 0, vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight());
+
+        // below line is use to create a bitmap for our
+        // drawable which we have added.
+        Bitmap bitmap = Bitmap.createBitmap(
+                vectorDrawable.getIntrinsicWidth(),
+                vectorDrawable.getIntrinsicHeight(),
+                Bitmap.Config.ARGB_8888);
+
+        // below line is use to add bitmap in our canvas.
+        Canvas canvas = new Canvas(bitmap);
+
+        // below line is use to draw our
+        // vector drawable in canvas.
+        vectorDrawable.draw(canvas);
+
+        // after generating our bitmap we are returning our
+        // bitmap.
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }
+
+
+
+
+
