@@ -79,19 +79,17 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 try {
-                    Post(username.getText().toString(),password.getText().toString());
+                    Post(username.getText().toString(), password.getText().toString());
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    e.printStackTrace();
                 }
             }
         });
+
     }
 
 
-    public void Post(String User,String Password) throws Exception {
-
-
-
+    public void Post(String User, String Password) {
         RequestBody formBody = new FormBody.Builder()
                 .add("user", User)
                 .add("password", Password)
@@ -102,41 +100,76 @@ public class MainActivity extends AppCompatActivity {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-            Toast.makeText(getApplicationContext(), "Has iniciado Sesion", Toast.LENGTH_SHORT).show();
-            data = response.body().string();
-            JSONObject json = new JSONObject(data);
-            Token = json.getString("token");
-            JWT jwt = new JWT(Token);
-            Name = jwt.getClaim("name").asString();
-            LastName = jwt.getClaim("last_name").asString();
-            Rol = jwt.getClaim("id").asInt();
-            Matricula = jwt.getClaim("matricula").asInt();
-            Payment = jwt.getClaim("payment_verifed").asBoolean();
-            Date = jwt.getClaim("expiration_at").asInt();
-            onBoard = jwt.getClaim("onboard").asBoolean();
-            role = jwt.getClaim("role").asString();
-            Route = jwt.getClaim("route_id").asInt();
-            if (Token != null) {
-                editor.putString("token",Token);
-                editor.putString("name",Name);
-                editor.putString("last_name",LastName);
-                editor.putInt("id",Rol);
-                editor.putInt("matricula",Matricula);
-                editor.putBoolean("payment_verifed",Payment);
-                editor.putInt("expiration_at",Date);
-                editor.putBoolean("onboard",onBoard);
-                editor.putString("role",role);
-                editor.putInt("route_id",Route);
-                editor.apply();
-                if (role.equals("chofer")) {
-                    startActivity(new Intent(this, HomeChofer.class));
+            if (!response.isSuccessful()) {
+                if (response.code() == 401) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "Usuario o contraseña incorrectos", Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 } else {
-                    startActivity(new Intent(this, Home.class));
+                    throw new IOException("Unexpected code " + response);
                 }
+            } else {
+                data = response.body().string();
+                JSONObject json = new JSONObject(data);
+                Token = json.getString("token");
+                JWT jwt = new JWT(Token);
+                Name = jwt.getClaim("name").asString();
+                LastName = jwt.getClaim("last_name").asString();
+                Rol = jwt.getClaim("id").asInt();
+                Matricula = jwt.getClaim("matricula").asInt();
+                Payment = jwt.getClaim("payment_verifed").asBoolean();
+                Date = jwt.getClaim("expiration_at").asInt();
+                onBoard = jwt.getClaim("onboard").asBoolean();
+                role = jwt.getClaim("role").asString();
+                Route = jwt.getClaim("route_id").asInt();
+                if (Token != null) {
+                    editor.putString("token",Token);
+                    editor.putString("name",Name);
+                    editor.putString("last_name",LastName);
+                    editor.putInt("id",Rol);
+                    editor.putInt("matricula",Matricula);
+                    editor.putBoolean("payment_verifed",Payment);
+                    editor.putInt("expiration_at",Date);
+                    editor.putBoolean("onboard",onBoard);
+                    editor.putString("role",role);
+                    editor.putInt("route_id",Route);
+                    editor.apply();
+                    if (role.equals("chofer")) {
+                        startActivity(new Intent(this, HomeChofer.class));
+                    } else {
+                        startActivity(new Intent(this, Home.class));
+                    }
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "Has iniciado sesión", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                // ...
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "Error al conectarse al servidor", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "Usuario o Contraseña Incorrectos", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
-    }//fin post
+    }
+//fin post
 
     private void checkSession() {
         String token = sharedPref.getString("token", null);
