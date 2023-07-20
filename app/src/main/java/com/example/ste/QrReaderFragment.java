@@ -1,21 +1,24 @@
 package com.example.ste;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.util.Log;
+import android.util.SparseArray;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.webkit.URLUtil;
+import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
@@ -26,174 +29,164 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-
 public class QrReaderFragment extends Fragment {
 
-    private static final String TAG = "QrReaderFragment";
-    private static final int MY_PERMISSIONS_REQUEST_CAMERA = 1;
-
-    private Context context;
-    private SurfaceView cameraView;
     private CameraSource cameraSource;
-    private BarcodeDetector barcodeDetector;
-    private String previousToken = "";
+    private SurfaceView cameraView;
+    private final int MY_PERMISSIONS_REQUEST_CAMERA = 1;
+    private String token = "";
+    private String tokenanterior = "";
 
-    private OkHttpClient client = new OkHttpClient();
+    String Token;
 
-    boolean qrDetectionEnabled;
+    String lastScannedQR;
 
+    Context thiscontext;
+    OkHttpClient client = new OkHttpClient();
+
+    View view;
+
+    JSONObject json;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_qr_reader, container, false);
-        context = view.getContext();
-        cameraView = view.findViewById(R.id.camera_view);
+        view = inflater.inflate(R.layout.fragment_qr_reader, container, false);
+        cameraView = (SurfaceView) view.findViewById(R.id.camera_view);
+        thiscontext = view.getContext();
         initQR();
         return view;
     }
 
-    private void initQR() {
-        barcodeDetector = new BarcodeDetector.Builder(context)
-                .setBarcodeFormats(Barcode.QR_CODE)
-                .build();
 
-        cameraSource = new CameraSource.Builder(context, barcodeDetector)
+    public void initQR() {
+
+        // creo el detector qr
+        BarcodeDetector barcodeDetector =
+                new BarcodeDetector.Builder(thiscontext)
+                        .setBarcodeFormats(Barcode.ALL_FORMATS)
+                        .build();
+
+        // creo la camara
+        cameraSource = new CameraSource
+                .Builder(thiscontext, barcodeDetector)
                 .setRequestedPreviewSize(1600, 1024)
-                .setAutoFocusEnabled(true)
+                .setAutoFocusEnabled(true) //you should add this feature
                 .build();
 
+        // listener de ciclo de vida de la camara
         cameraView.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
-            public void surfaceCreated(@NonNull SurfaceHolder holder) {
-                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+            public void surfaceCreated(SurfaceHolder holder) {
+
+                // verifico si el usuario dio los permisos para la camara
+                if (ActivityCompat.checkSelfPermission(thiscontext, android.Manifest.permission.CAMERA)
                         != PackageManager.PERMISSION_GRANTED) {
-                    requestCameraPermission();
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        // verificamos la version de ANdroid que sea al menos la M para mostrar
+                        // el dialog de la solicitud de la camara
+                        if(shouldShowRequestPermissionRationale(
+                                android.Manifest.permission.CAMERA));
+                        requestPermissions(new String[]{android.Manifest.permission.CAMERA},
+                                MY_PERMISSIONS_REQUEST_CAMERA);
+                    }
+                    return;
                 } else {
                     try {
-                        startCamera();
-                    } catch (IOException e) {
-                        Log.e(TAG, "Error al iniciar la cámara: " + e.getMessage(), e);
+                        cameraSource.start(cameraView.getHolder());
+                    } catch (IOException ie) {
+                        Log.e("CAMERA SOURCE", ie.getMessage());
                     }
                 }
             }
 
             @Override
-            public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
             }
 
             @Override
-            public void surfaceDestroyed(@NonNull SurfaceHolder holder) {
-                stopCamera();
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                cameraSource.stop();
             }
         });
 
-        // ...
-
-        qrDetectionEnabled = true;
-
+        // preparo el detector de QR
         barcodeDetector.setProcessor(new Detector.Processor<Barcode>() {
             @Override
             public void release() {
             }
 
+
             @Override
-            public void receiveDetections(@NonNull Detector.Detections<Barcode> detections) {
-            }
+            public void receiveDetections(Detector.Detections<Barcode> detections) {
+                final SparseArray<Barcode> barcodes = detections.getDetectedItems();
+                if (barcodes.size() > 0) {
+                    // Obtenemos el token
+                    token = barcodes.valueAt(0).displayValue.toString();
+                    lastScannedQR = "";
 
-            // Remove @Override annotation here
-            public void onNewItem(int id, Barcode item) {
-                if (!qrDetectionEnabled) {
-                    return;
-                }
+                    // Verificamos si el token escaneado es diferente del último token escaneado
+                    if (!token.equals(lastScannedQR)) {
+                        // Guardamos el último token escaneado
+                        lastScannedQR = token;
+                        Log.i("token", token);
 
-                qrDetectionEnabled = false;
-
-                String token = item.displayValue;
-                if (!token.equals(previousToken)) {
-                    previousToken = token;
-                    Log.i(TAG, "Token: " + token);
-                    try {
-                        JSONObject json = new JSONObject(token);
-                        String userToken = json.getString("token");
-                        post(userToken);
-                        showToast("QR escaneado exitosamente");
-                    } catch (JSONException e) {
-                        Log.e(TAG, "JSONException: " + e.getMessage(), e);
+                        try {
+                            json = new JSONObject(token);
+                            Token = json.getString("token");
+                            Post(Token);
+                            getActivity().runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(thiscontext, "QR escaneado exitosamente", Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        // Si el token es el mismo que el anterior, mostramos un toast indicando que ya se escaneó previamente
+                        Toast.makeText(thiscontext, "QR escaneado previamente", Toast.LENGTH_SHORT).show();
                     }
-                } else{
-                    showToast("QR escaneado previamente");
                 }
-
-                // Enable QR detection after a delay
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        qrDetectionEnabled = true;
-                    }
-                }, 2000); // Adjust the delay as needed
             }
         });
 
-// ...
+    }//fin qr
 
-    }
 
-    private void requestCameraPermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.CAMERA)) {
-            Toast.makeText(context, "Se requiere permiso de la cámara para escanear códigos QR", Toast.LENGTH_SHORT).show();
-        }
-        requestPermissions(new String[]{Manifest.permission.CAMERA}, MY_PERMISSIONS_REQUEST_CAMERA);
-    }
+    public void Post( String userToken) throws Exception {
+        RequestBody requestBody = new FormBody.Builder()
+                .build();
 
-    private void startCamera() throws IOException {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        cameraSource.start(cameraView.getHolder());
-    }
-
-    private void stopCamera() {
-        cameraSource.stop();
-    }
-
-    private void post(String userToken) {
-        RequestBody requestBody = new FormBody.Builder().build();
         Request request = new Request.Builder()
                 .url("https://api-ste.smartte.com.mx/apiv2/updateOnboard")
                 .addHeader("cache-control", "no-cache")
-                .addHeader("Authorization", "Bearer " + userToken)
+                .addHeader("Authorization" , "Bearer " + userToken)
                 .post(requestBody)
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Log.e(TAG, "Error en la solicitud POST: " + e.getMessage(), e);
+            public void onFailure(Call call, IOException e) {
+
             }
 
             @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                // Maneja la respuesta aquí si es necesario
+            public void onResponse(Call call, Response response) throws IOException {
+
             }
         });
-    }
-
-    private void showToast(String message) {
-        getActivity().runOnUiThread(() -> {
-            Handler handler = new Handler();
-            handler.postDelayed(() -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show(), 0);
-        });
-    }
-
+    }//fin post
 }
 
 

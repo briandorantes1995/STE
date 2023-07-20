@@ -6,6 +6,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +19,11 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 
 public class HomeFragment extends Fragment {
@@ -31,7 +38,13 @@ public class HomeFragment extends Fragment {
 
     JSONObject DatosQR = new JSONObject();
 
+    String data;
+
     public static final String TAG = "YOUR-TAG-NAME";
+
+    private OkHttpClient client;
+
+    boolean Onboard;
 
 
 
@@ -48,6 +61,14 @@ public class HomeFragment extends Fragment {
         Name = sh.getString("name", "");
         Rolusuario = sh.getString("role", "");
         Token = sh.getString("token", "");
+        client = new OkHttpClient();
+        try {
+            getOnboard();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
 
         InputStream URLcontent = null;
         try {
@@ -58,9 +79,25 @@ public class HomeFragment extends Fragment {
         }
         Drawable image = Drawable.createFromStream(URLcontent, "your source link");
         credencial = view.findViewById(R.id.credencialqr);
-        credencial.setImageDrawable(image);
-
+        if(!Onboard){
+            credencial.setImageDrawable(image);
+        }else{
+            credencial.setImageResource(R.drawable.checkin);
+        }
 
         return view;
+    }
+
+    public void getOnboard() throws IOException, JSONException {
+        Request request = new Request.Builder()
+                .url("https://api-ste.smartte.com.mx/apiv2/onboardStatus")
+                .addHeader("Authorization", "Bearer " + Token)
+                .build();
+
+        Call call = client.newCall(request);
+        Response response = call.execute();
+        data = response.body().string();
+        JSONObject json = new JSONObject(data);
+        Onboard = json.getBoolean("onboard");
     }
 }

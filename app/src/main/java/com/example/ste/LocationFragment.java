@@ -60,6 +60,8 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
 
     Integer ruta;
 
+    Context context;
+
     private Handler handler;
     private static final long UPDATE_INTERVAL = 10 * 1000; // 10 segundos
 
@@ -69,6 +71,7 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        context = requireContext();
         view = inflater.inflate(R.layout.fragment_location2, container, false);
         sharedPref = requireActivity().getSharedPreferences("MySharedPref", MODE_PRIVATE);
         token = sharedPref.getString("token", null);
@@ -122,7 +125,7 @@ public class LocationFragment extends Fragment implements OnMapReadyCallback {
             LatLng latLng = new LatLng(latitude, longitude);
             map.clear(); // Limpiar los marcadores existentes en el mapa
             map.addMarker(new MarkerOptions().position(latLng).title("Autobus").icon(BitmapFromVector(
-                   getActivity(),
+                   context,
                     R.drawable.marcadorautobus)));
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
         }

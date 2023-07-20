@@ -83,7 +83,7 @@ public class Home extends AppCompatActivity implements NavigationView.OnNavigati
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new NewsFragment()).commit();
         }
         if(item.getItemId() == R.id.nav_logout) {
-                Toast.makeText(this, "Logout!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Sesion Cerrada", Toast.LENGTH_SHORT).show();
                 clearSession();
         }
 

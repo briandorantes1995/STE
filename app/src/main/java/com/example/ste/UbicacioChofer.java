@@ -75,12 +75,15 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
     String token;
     Integer ruta;
 
+    Context context;
+
 
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_ubicacio_chofer, container, false);
+        context = requireContext();
         sharedPref = this.getActivity().getSharedPreferences("MySharedPref", MODE_PRIVATE);
         token = sharedPref.getString("token", null);
         ruta = sharedPref.getInt("route_id", 0);
@@ -217,7 +220,7 @@ public class UbicacioChofer extends Fragment implements OnMapReadyCallback {
             LatLng latLng = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
             map.clear();
             map.addMarker(new MarkerOptions().position(latLng).title("Posicion Actual").icon(BitmapFromVector(
-                    getActivity(),
+                    context,
                     R.drawable.marcadorautobus)));
             map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, DEFAULT_ZOOM));
             String latitude = String.valueOf(lastKnownLocation.getLatitude());
