@@ -9,30 +9,23 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.webkit.URLUtil;
 import android.widget.Toast;
 
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
-
-import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.FormBody;
-import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;

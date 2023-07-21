@@ -97,7 +97,9 @@ public class HomeFragment extends Fragment {
         Call call = client.newCall(request);
         Response response = call.execute();
         data = response.body().string();
+        Log.i("token", data);
         JSONObject json = new JSONObject(data);
+        Log.i("token", String.valueOf(json));
         Onboard = json.getBoolean("onboard");
     }
 }

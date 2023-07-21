@@ -25,9 +25,9 @@ import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-     String data;
+    String data;
 
-     String Token;
+    String Token;
 
 
     String Name;
@@ -47,11 +47,9 @@ public class MainActivity extends AppCompatActivity {
     Integer Date;
     Integer Route;
 
-    String Tok;
-
     OkHttpClient client = new OkHttpClient();
-     EditText username;
-     EditText password;
+    EditText username;
+    EditText password;
     Button loginButton;
 
     SharedPreferences sharedPref;
@@ -72,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
         password = findViewById(R.id.password);
         loginButton = findViewById(R.id.iniciarsesion);
         checkSession();
-
 
 
         loginButton.setOnClickListener(new View.OnClickListener() {
@@ -126,16 +123,16 @@ public class MainActivity extends AppCompatActivity {
                 role = jwt.getClaim("role").asString();
                 Route = jwt.getClaim("route_id").asInt();
                 if (Token != null) {
-                    editor.putString("token",Token);
-                    editor.putString("name",Name);
-                    editor.putString("last_name",LastName);
-                    editor.putInt("id",Rol);
-                    editor.putInt("matricula",Matricula);
-                    editor.putBoolean("payment_verifed",Payment);
-                    editor.putInt("expiration_at",Date);
-                    editor.putBoolean("onboard",onBoard);
-                    editor.putString("role",role);
-                    editor.putInt("route_id",Route);
+                    editor.putString("token", Token);
+                    editor.putString("name", Name);
+                    editor.putString("last_name", LastName);
+                    editor.putInt("id", Rol);
+                    editor.putInt("matricula", Matricula);
+                    editor.putBoolean("payment_verifed", Payment);
+                    editor.putInt("expiration_at", Date);
+                    editor.putBoolean("onboard", onBoard);
+                    editor.putString("role", role);
+                    editor.putInt("route_id", Route);
                     editor.apply();
                     if (role.equals("chofer")) {
                         startActivity(new Intent(this, HomeChofer.class));
@@ -173,7 +170,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkSession() {
         String token = sharedPref.getString("token", null);
-        if (token != null) {
+        Integer Date = sharedPref.getInt("expiration_at",0);
+        if (token != null && Date != 0 && isTokenValid(Date)) {
             // Si hay un token almacenado, iniciar la actividad correspondiente según el rol del usuario
             String role = sharedPref.getString("role", null);
             if (role != null) {
@@ -186,5 +184,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }//fin check sesion
+
+
+    public static boolean isTokenValid(Integer Fecha) {
+        // Obtener el tiempo actual en segundos (UNIX timestamp)
+        long currentTime = System.currentTimeMillis() / 1000;
+        // Comparar si el token ha expirado
+        return Fecha > currentTime;
+
+    }
 
 }

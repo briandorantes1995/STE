@@ -18,6 +18,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.google.android.material.navigation.NavigationView;
 
+import java.io.IOException;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class HomeChofer extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawerLayout;
@@ -30,6 +40,8 @@ public class HomeChofer extends AppCompatActivity implements NavigationView.OnNa
 
     TextView Usuario;
     TextView Roles;
+
+    OkHttpClient client = new OkHttpClient();
 
 
     @Override
@@ -93,7 +105,11 @@ public class HomeChofer extends AppCompatActivity implements NavigationView.OnNa
     }
 
     private void clearSession() {
-        editor.remove("token");
+        try {
+            Post(Token);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         editor.remove("name");
         editor.remove("last_name");
         editor.remove("id");
@@ -103,8 +119,34 @@ public class HomeChofer extends AppCompatActivity implements NavigationView.OnNa
         editor.remove("onboard");
         editor.remove("role");
         editor.remove("route_id");
+        editor.remove("token");
         editor.apply();
         startActivity(new Intent(this, MainActivity.class));
     }
+
+
+    public void Post( String userToken) throws Exception {
+        RequestBody requestBody = new FormBody.Builder()
+                .build();
+
+        Request request = new Request.Builder()
+                .url("https://api-ste.smartte.com.mx/V4/students/onboard")
+                .addHeader("cache-control", "no-cache")
+                .addHeader("Authorization" , "Bearer " + userToken)
+                .post(requestBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+
+            }
+        });
+    }//fin post
 
 }
